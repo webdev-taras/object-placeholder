@@ -1,0 +1,39 @@
+{
+  "name": "object-placeholder",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "keywords": [
+    "placeholder",
+    "replace",
+    "template",
+    "templates",
+    "mustache",
+    "object",
+    "string"
+  ],
+  "author": {
+    "name": "Taras Panasiuk",
+    "email": "webdev.taras@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com:webdev-taras/object-placeholder.git"
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "ava",
+    "test:watch": "ava --watch",
+    "test:coverage": "nyc ava --timeout=3000"
+  },
+  "ava": {
+    "files": [
+      "test/**/*.test.js",
+      "!test/data"
+    ]
+  },
+  "devDependencies": {
+    "ava": "^3.15.0",
+    "nyc": "^15.1.0"
+  }
+}
