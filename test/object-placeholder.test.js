@@ -1,6 +1,15 @@
 const test = require('ava')
 const placeholder = require('../src/object-placeholder.js')
 
+test('placeholder: Number',
+  testObjectPlaceholder,
+  {
+    template: 6546546546,
+    data: undefined,
+  },
+  6546546546,
+)
+
 test('placeholder: String',
   testObjectPlaceholder,
   {
@@ -15,6 +24,7 @@ test('placeholder: String',
     },
     options: {
       nested: false,
+      error: false,
     }
   },
   'Hello, World! It is currently. {{not.exist}} You are happy to eat a turkey sandwich. (<em>{{}} <~~ to make sure empty braces are ignored</em>)',
@@ -244,17 +254,6 @@ test('placeholder: List',
   }
 )
 
-test('placeholder: Number',
-  testObjectPlaceholderWithError,
-  {
-    template: 6546546546,
-    data: {}
-  },
-  {
-    message: 'object-placeholder: please provide a valid string template',
-  },
-)
-
 test('placeholder: Not template object property',
   testObjectPlaceholder,
   {
@@ -264,20 +263,83 @@ test('placeholder: Not template object property',
   { obj: 6546546546 },
 )
 
-// TODO: options.error should manage this case
 test('placeholder: Not resolved',
   testObjectPlaceholder,
   {
     template: '{{user.name}}',
-    data: {}
+    data: {},
+    options: {
+      error: false,
+    }
   },
   '{{user.name}}'
+)
+
+test('placeholder: String: Path not found',
+  testObjectPlaceholderWithError,
+  {
+    template: '{{user.name}}',
+    data: {},
+    options: {
+      error: true,
+    }
+  },
+  {
+    message: `object-placeholder: undefined value by path 'user.name'`,
+  },
+)
+
+test('placeholder: Object: Path not found',
+  testObjectPlaceholderWithError,
+  {
+    template: { name: '{{user.name}}' },
+    data: {},
+    options: {
+      error: true,
+    }
+  },
+  {
+    message: `object-placeholder: undefined value by path 'user.name'`,
+  },
+)
+
+test('placeholder: Array: Path not found',
+  testObjectPlaceholderWithError,
+  {
+    template: ['{{user.name}}'],
+    data: {},
+    options: {
+      error: true,
+    }
+  },
+  {
+    message: `object-placeholder: undefined value by path 'user.name'`,
+  },
+)
+
+test('placeholder: List: Path not found',
+  testObjectPlaceholderWithError,
+  {
+    template: {
+      emails: [
+        '@{{ service.members | member }}',
+        '{{ @.member.email }}',
+      ],
+    },
+    data: {
+      service: {
+        members: 'SOME_IT_SERVICE',
+      },
+    },
+  },
+  {
+    message: `object-placeholder: path 'service.members' should point to array value`,
+  },
 )
 
 
 function testObjectPlaceholder(t, input = {}, expected = {}) {
   const { template, data, options } = input
-  data.t = t
   const result = placeholder(template, data, options)
   t.deepEqual(result, expected)
 }

@@ -7,9 +7,9 @@ placeholder(template, data, options)
 where:
 - `template` - some template (string, object, array)
 - `data` - object with values to replace
-- `options` - { nested: true } by default
+- `options` - { error: true } by default
 
-This function allows you to substitute ('mustache' like) `{{<templates>}}` by `values`.
+This function allows you to substitute ('mustache' like) `{{<template>}}` by values in `<data>` param including all nested properties of object or array template.
 
 ## Usage
 
@@ -140,13 +140,15 @@ In this case `data` parameter should be the object:
 
 ## Options
 
-### nested
+### error
 
-Allows to process all nested properties in object.
+Define how to manage the case when template was not resolved.
+If `true` then throw the Error immediately in place where value by specified path was not found.
+If `false` then just pass through this case in leave template string as is.
 
 ```javascript
 options: {
-  nested: true // by default
+  error: true // by default
 }
 ```
 

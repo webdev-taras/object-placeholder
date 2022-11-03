@@ -3,59 +3,63 @@
 
 const isObject = require('./is-plain-object')
 
-module.exports = (template, data, options = {}) => {
+module.exports = (template, data = {}, options = {}) => {
 	const {
-		nested = true,
-		// error = true,
+		error = true,
 	} = options
 
 	const storage = {
 		'{}': data,
 		'@': {},
 	}
-	const recursiveFunction = nested ? nestedPlaceholder : stringPlaceholder
-	return nestedPlaceholder(template, storage, recursiveFunction)
+	return nestedPlaceholder(template, storage, error)
 }
 
 /* eslint-disable no-nested-ternary */
-function nestedPlaceholder (template, storage, recursiveFunction) {
+function nestedPlaceholder (template, storage, error) {
 	const placeholder = (isObject(template))
 		? objectPlaceholder
 		: (Array.isArray(template))
 			? arrayPlaceholder
-			: stringPlaceholder
-	return placeholder(template, storage, recursiveFunction)
+			: (isStringTemplate(template))
+				? stringPlaceholder
+				: valuePlaceholder
+	return placeholder(template, storage, error)
 }
 
-function objectPlaceholder (template, storage, recursiveFunction) {
+function objectPlaceholder (template, storage, error) {
 	return Object.keys(template).reduce((obj, key) => {
-		try {
-			obj[key] = recursiveFunction(template[key], storage, recursiveFunction)
-		} catch(err) {
-			obj[key] = template[key]
-		}
+		obj[key] = nestedPlaceholder(template[key], storage, error)
 		return obj
 	}, {})
 }
 
-function arrayPlaceholder (template, storage, recursiveFunction) {
+function arrayPlaceholder (template, storage, error) {
 	// Reference: replace the whole line by value and hold the type
 	const [ first, ...block ] = template
 	// Loop: all items from template replace by value for each item of specified array
 	if (typeof first === 'string' && first.startsWith('@{{') && first.endsWith('}}')) {
 		const { path, alias } = stringToExpresion(first)
-		const array = getExpanded(storage, path, undefined, false)
+		const array = getExpanded(storage, path, error, false)
 		if (!Array.isArray(array)) 
     	throw new Error(`object-placeholder: path '${path}' should point to array value`)
 		const output = array.map(item => {
 			storage['@'][alias] = item
-			return block.map(el => recursiveFunction(el, storage, recursiveFunction))
+			return block.map(el => nestedPlaceholder(el, storage, error))
 		})
 		storage['@'][alias] = undefined
 		return output.flat()
 	} else {
-		return template.map(el => recursiveFunction(el, storage, recursiveFunction))
+		return template.map(el => nestedPlaceholder(el, storage, error))
 	}
+}
+
+function valuePlaceholder (template, storage, error) {
+	return template
+}
+
+function isStringTemplate (template) {
+	return (typeof template === 'string' && template.includes('{{'))
 }
 
 /**
@@ -82,7 +86,7 @@ function stringToPath (path) {
 	if (typeof path !== 'string') return path
 
 	// Create new array
-	let output = []
+	const output = []
 
 	// Split to an array with dot notation
 	path.split('.').forEach(function (item) {
@@ -93,7 +97,7 @@ function stringToPath (path) {
 			// Push to the new array
 			if (key.length > 0) {
 				output.push(key)
-			}
+			} // TODO: else should be an error
 
 		})
 
@@ -109,7 +113,7 @@ function stringToPath (path) {
  * @param  {*}            def  A default value to return [optional]
  * @return {*}                 The value
  */
-function get (obj, path, def) {
+function get (obj, path, error) {
 
 	// Get the path as an array
 	path = stringToPath(path)
@@ -119,13 +123,17 @@ function get (obj, path, def) {
 
 	// For each item in the path, dig into the object
 	for (let i = 0; i < path.length; i++) {
-
-		// If the item isn't found, return the default (or undefined)
-		if (current[path[i]] == null) return def
-
-		// Otherwise, update the current  value
+		// update the current  value
+		// TODO: need to manage case with array index number like [1]
 		current = current[path[i]]
 
+		// If the item isn't found, return the default (or undefined)
+		if (current == null) {
+			if (error)
+    		throw new Error(`object-placeholder: undefined value by path '${path.join('.')}'`)
+			else
+				return current
+		}
 	}
 
 	return current
@@ -139,7 +147,7 @@ function get (obj, path, def) {
  * @param  {Boolean}      stringify Converte to string the output value 
  * @return {*}                 The output value
  */
-function getExpanded (storage, inputPath, def, stringify = true) {
+function getExpanded (storage, inputPath, error, stringify = true) {
 	
 	// Get the path as an array
 	const path = stringToPath(inputPath)
@@ -152,7 +160,7 @@ function getExpanded (storage, inputPath, def, stringify = true) {
 	}
 	const obj = storage[root]
 
-	const data = get(obj, path, def)
+	const data = get(obj, path, error)
 
 	const result = (stringify && typeof data === 'object')
 		? JSON.stringify(data)
@@ -166,19 +174,11 @@ function getExpanded (storage, inputPath, def, stringify = true) {
  * @param {String} template The template string
  * @param {String} local    A local placeholder to use, if any
  */
-function stringPlaceholder (template, data) {
-
-	if (typeof template !== 'string') 
-    throw new Error('object-placeholder: please provide a valid string template')
-
-	// If no data, return template as-is
-	// TODO: options.error should manage this case
-	if (!data) return template
-
+function stringPlaceholder (template, data, error) {
 	// Reference: replace the whole line by value and hold the type
 	if (template.startsWith('&{{') && template.endsWith('}}')) {
 		const { path } = stringToExpresion(template)
-		const value = getExpanded(data, path, undefined, false)
+		const value = getExpanded(data, path, error, false)
 		return value
 	}
 
@@ -187,7 +187,7 @@ function stringPlaceholder (template, data) {
 		// Remove the wrapping curly braces
 		const path = match.slice(2, -2).trim()
 		// Get the value
-		var value = getExpanded(data, path)
+		const value = getExpanded(data, path, error)
 		// Replace
 		return (value == null) ? '{{' + path + '}}' : value
 	})
