@@ -207,6 +207,43 @@ test('placeholder: apicall',
   }
 )
 
+test('placeholder: List',
+  testObjectPlaceholder,
+  {
+    template: {
+      title: '{{ service.id }}',
+      emails: [
+        '@{{ service.members | member }}',
+        '{{ @.member.email }}',
+      ],
+      users: '&{{ service.members }}',
+    },
+    data: {
+      service: {
+        id: 'SOME_IT_SERVICE',
+        members: [
+          { id: 'user1', email: 'user1@test.com' },
+          { id: 'user2', email: 'user2@test.com' },
+          { id: 'user3', email: 'user3@test.com' },
+        ],
+      },
+    },
+  },
+  { 
+    title: 'SOME_IT_SERVICE',
+    emails: [
+      'user1@test.com',
+      'user2@test.com',
+      'user3@test.com',
+    ],
+    users: [
+      { id: 'user1', email: 'user1@test.com' },
+      { id: 'user2', email: 'user2@test.com' },
+      { id: 'user3', email: 'user3@test.com' },
+    ],
+  }
+)
+
 test('placeholder: Number',
   testObjectPlaceholderWithError,
   {
@@ -214,7 +251,7 @@ test('placeholder: Number',
     data: {}
   },
   {
-    message: 'object-placeholder: please provide a valid template',
+    message: 'object-placeholder: please provide a valid string template',
   },
 )
 

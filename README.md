@@ -17,7 +17,7 @@ This function allows you to substitute ('mustache' like) `{{<templates>}}` by `v
 const placeholder = require('object-placeholder')
 ```
 
-String template:
+`String` template:
 ```javascript
 const template = '{{user.name}}, {{user.email}}, {{user.id}}'
 const data = {
@@ -31,12 +31,14 @@ const result = placeholder(template, data)
 // result = 'John Connor, john.connor@test.com, 1985'
 ```
 
-Object template:
+`Object` template:
 ```javascript
 const template = {
-  target: '{{user.name}}',
+  target: {
+    uuid: '&{{user.id}}',
+    user: '{{user.name}}',
+  },
   mailto: 'mailto:{{user.email}}',
-  uuid: '&{{user.id}}',
 }
 const data = {
   user: {
@@ -48,9 +50,42 @@ const data = {
 const result = placeholder(template, data)
 /*
 result = {
-  target: 'John Connor',
+  target: { uuid: 1985, user: 'John Connor' },
   mailto: 'mailto:john.connor@test.com'
-  uuid: 1985,
+}
+*/
+```
+
+`Array` template:
+```javascript
+const template = {
+  title: '{{ service.id }}',
+  emails: [
+    '@{{ service.members | member }}', // for each item of 'service.members'
+    '{{ @.member.email }}', // '@.member' - current item
+  ],
+  users: '&{{ service.members }}',
+}
+const data = {
+  service: {
+    id: 'SOME_IT_SERVICE',
+    members: [
+      { id: 'user1', email: 'user1@test.com' },
+      { id: 'user2', email: 'user2@test.com' },
+      { id: 'user3', email: 'user3@test.com' },
+    ],
+  },
+}
+const result = placeholder(template, data)
+/*
+result = {
+  title: 'SOME_IT_SERVICE',
+  emails: [ 'user1@test.com', 'user2@test.com', 'user3@test.com' ],
+  users: [
+    { id: 'user1', email: 'user1@test.com' },
+    { id: 'user2', email: 'user2@test.com' },
+    { id: 'user3', email: 'user3@test.com' }
+  ]
 }
 */
 ```
@@ -69,6 +104,20 @@ Returns the value converted to 'string' type
 Returns the value of original type
 ```text
 &{{property}}
+```
+
+3. Loop syntax
+
+Starts new loop for property of array type
+```text
+@{{ array | item }}
+```
+
+4. Item syntax
+
+Returns the value of current item in a loop 
+```text
+{{@.item.property}}
 ```
 
 ## Path
