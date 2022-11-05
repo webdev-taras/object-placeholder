@@ -60,6 +60,8 @@ result = {
 ```javascript
 const template = {
   title: '{{ service.id }}',
+  admin: '{{ service.members[0].id }}', // get first element of 'service.members'
+  mailto: '{{service.members.0.email}}',
   emails: [
     '@{{ service.members | member }}', // for each item of 'service.members'
     '{{ @.member.email }}', // '@.member' - current item
@@ -80,6 +82,8 @@ const result = placeholder(template, data)
 /*
 result = {
   title: 'SOME_IT_SERVICE',
+  admin: 'user1',
+  mailto: 'user1@test.com',
   emails: [ 'user1@test.com', 'user2@test.com', 'user3@test.com' ],
   users: [
     { id: 'user1', email: 'user1@test.com' },

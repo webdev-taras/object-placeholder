@@ -14,7 +14,6 @@ test('placeholder.String: Path not found',
     message: `object-placeholder: undefined value by path 'user.name'`,
   },
 )
-test.todo('placeholder.MultiString: Path not found')
 
 test('placeholder.Object: Path not found',
   caseObjectPlaceholderWithError,

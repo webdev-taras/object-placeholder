@@ -5,15 +5,63 @@ test('placeholder.String: not resolved',
   caseObjectPlaceholder,
   {
     template: '{{user.name}}',
-    data: {},
-    options: {
-      error: false,
-    }
+    options: { error: false }
   },
   '{{user.name}}'
 )
-test.todo('placeholder.EmptyString: not resolved')
-test.todo('placeholder.MultiString: not resolved')
-test.todo('placeholder.Object: not resolved')
-test.todo('placeholder.Array: not resolved')
-test.todo('placeholder.List: not resolved')
+
+test('placeholder.EmptyPath: not resolved',
+  caseObjectPlaceholder,
+  {
+    template: '{{}}',
+    options: { error: false }
+  },
+  '{{}}'
+)
+
+test('placeholder.Object: not resolved',
+  caseObjectPlaceholder,
+  {
+    template: {
+      name: '{{user.name}}',
+      info: '{{}}',
+    },
+    options: { error: false }
+  },
+  {
+    name: '{{user.name}}',
+    info: '{{}}',
+  }
+)
+
+test('placeholder.Array: not resolved',
+  caseObjectPlaceholder,
+  {
+    template: ['{{}}'],
+    options: { error: false }
+  },
+  ['{{}}']
+)
+
+test('placeholder.List: not resolved',
+  caseObjectPlaceholder,
+  {
+    template: [
+      '@{{ members | member }}',
+      '{{ @.member.name }}',
+    ],
+    data: {
+      members: [
+        { id: 'user1', email: 'user1@test.com' },
+        { id: 'user2', email: 'user2@test.com' },
+        { id: 'user3', email: 'user3@test.com' },
+      ],
+    },
+    options: { error: false }
+  },
+  [
+    '{{@.member.name}}',
+    '{{@.member.name}}',
+    '{{@.member.name}}',
+  ]
+)

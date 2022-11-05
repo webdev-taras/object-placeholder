@@ -14,7 +14,6 @@ test('placeholder.String: simple',
       }
     },
     options: {
-      nested: false,
       error: false,
     }
   },
@@ -26,24 +25,35 @@ test('placeholder.MultiString: service',
   {
     template: `
     serviceId: {{service.id}}
-    displayName: '{{platform.id}} ({{environment.name}}): {{service.id}} {{role.name}}'
+    displayName: '{{platform.id}} ({{environment.name}}): {{service.name}} {{role.name}}'
     serviceType: Integration Service
-    appConfigurationId: {{service.id}}
+    appConfigurationId: {{platform.id}}
+    active: {{service.active}}
+    admin: {{emails[0]}}
     service: {{service}}
+    emails: {{emails}}
     `,
     data: {
-      service: { id: 'SOME_IT_SERVICE', name: 'Some IT Service' },
+      service: { id: 123456789, name: 'Some IT Service', active: true },
       platform: { id: 'SOME_IT_SERVICE' },
       role: { name: 'APPMANAGER' },
       environment: { name: 'DEV' },
+      emails: [
+        'user1@test.com',
+        'user2@test.com',
+        'user3@test.com',
+      ],
     },
   },
   `
-    serviceId: SOME_IT_SERVICE
-    displayName: 'SOME_IT_SERVICE (DEV): SOME_IT_SERVICE APPMANAGER'
+    serviceId: 123456789
+    displayName: 'SOME_IT_SERVICE (DEV): Some IT Service APPMANAGER'
     serviceType: Integration Service
     appConfigurationId: SOME_IT_SERVICE
-    service: {"id":"SOME_IT_SERVICE","name":"Some IT Service"}
+    active: true
+    admin: user1@test.com
+    service: {"id":123456789,"name":"Some IT Service","active":true}
+    emails: ["user1@test.com","user2@test.com","user3@test.com"]
     `
 )
 
@@ -55,15 +65,16 @@ test('placeholder.Object: service',
       displayName: '{{platform.id}} ({{environment.name}}): {{service.id}} {{role.name}}',
       serviceType: 'Integration Service',
       appConfigurationId: '{{service.id}}',
-      members: '&{{appdata.members}}',
-      isExternal: '&{{appdata.isExternal}}',
+      mailto: '{{info.members.0.email}}',
+      members: '&{{info.members}}',
+      isExternal: '&{{info.isExternal}}',
     },
     data: {
       service: { id: 'SOME_IT_SERVICE' },
       platform: { id: 'SOME_IT_SERVICE' },
       role: { name: 'APPMANAGER' },
       environment: { name: 'DEV' },
-      appdata: {
+      info: {
         members: [
           { id: 'user1', email: 'user1@test.com' },
           { id: 'user2', email: 'user2@test.com' },
@@ -79,6 +90,7 @@ test('placeholder.Object: service',
     serviceType: 'Integration Service',
     isExternal: false,
     appConfigurationId: 'SOME_IT_SERVICE',
+    mailto: 'user1@test.com',
     members: [
       { id: 'user1', email: 'user1@test.com' },
       { id: 'user2', email: 'user2@test.com' },
@@ -172,8 +184,8 @@ test('placeholder.Array: service',
         { displayName: '{{platform.id}} ({{environment.name}}): {{service.id}} {{role.name}}' },
         { serviceType: 'Integration Service' },
         { appConfigurationId: '{{service.id}}' },
-        { members: '&{{appdata.members}}' },
-        { isExternal: '&{{appdata.isExternal}}' },
+        { members: '&{{info.members}}' },
+        { isExternal: '&{{info.isExternal}}' },
       ],
     },
     data: {
@@ -181,7 +193,7 @@ test('placeholder.Array: service',
       platform: { id: 'SOME_IT_SERVICE' },
       role: { name: 'APPMANAGER' },
       environment: { name: 'DEV' },
-      appdata: {
+      info: {
         members: [
           { id: 'user1', email: 'user1@test.com' },
           { id: 'user2', email: 'user2@test.com' },
@@ -218,7 +230,13 @@ test('placeholder.List: service',
         '@{{ service.members | member }}',
         '{{ @.member.email }}',
       ],
-      users: '&{{ service.members }}',
+      users: [
+        '@{{ service.members | member }}',
+        {
+          name: '{{ @.member.id }}',
+          email: '{{ @.member.email }}',
+        },
+      ],
     },
     data: {
       service: {
@@ -239,9 +257,9 @@ test('placeholder.List: service',
       'user3@test.com',
     ],
     users: [
-      { id: 'user1', email: 'user1@test.com' },
-      { id: 'user2', email: 'user2@test.com' },
-      { id: 'user3', email: 'user3@test.com' },
+      { name: 'user1', email: 'user1@test.com' },
+      { name: 'user2', email: 'user2@test.com' },
+      { name: 'user3', email: 'user3@test.com' },
     ],
   }
 )
