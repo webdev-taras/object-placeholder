@@ -27,6 +27,9 @@
     "test:coverage": "nyc ava --timeout=3000"
   },
   "ava": {
+    "require": [
+      "./test/before-tests.js"
+    ],
     "files": [
       "test/**/*.test.js",
       "!test/data"

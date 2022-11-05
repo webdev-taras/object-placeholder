@@ -1,17 +1,8 @@
 const test = require('ava')
-const placeholder = require('../src/object-placeholder.js')
+const { caseObjectPlaceholder } = require('./placeholders.case')
 
-test('placeholder: Number',
-  testObjectPlaceholder,
-  {
-    template: 6546546546,
-    data: undefined,
-  },
-  6546546546,
-)
-
-test('placeholder: String',
-  testObjectPlaceholder,
+test('placeholder.String: simple',
+  caseObjectPlaceholder,
   {
     template: '{{greeting}}, {{name}}! It is currently. {{not.exist}} You are {{details.mood}} to eat {{details.food}}. (<em>{{}} <~~ to make sure empty braces are ignored</em>)',
     data: {
@@ -30,37 +21,38 @@ test('placeholder: String',
   'Hello, World! It is currently. {{not.exist}} You are happy to eat a turkey sandwich. (<em>{{}} <~~ to make sure empty braces are ignored</em>)',
 )
 
-test('placeholder: MultiString',
-  testObjectPlaceholder,
+test('placeholder.MultiString: service',
+  caseObjectPlaceholder,
   {
     template: `
-    service: {{service.id}}
-    displayName: '{{platform.id}} ({{environment.shortName}}): {{service.id}} {{role.name}}'
+    serviceId: {{service.id}}
+    displayName: '{{platform.id}} ({{environment.name}}): {{service.id}} {{role.name}}'
     serviceType: Integration Service
     appConfigurationId: {{service.id}}
+    service: {{service}}
     `,
     data: {
-      service: { id: 'SOME_IT_SERVICE' },
+      service: { id: 'SOME_IT_SERVICE', name: 'Some IT Service' },
       platform: { id: 'SOME_IT_SERVICE' },
       role: { name: 'APPMANAGER' },
-      environment: { shortName: 'DEV' },
+      environment: { name: 'DEV' },
     },
   },
   `
-    service: SOME_IT_SERVICE
+    serviceId: SOME_IT_SERVICE
     displayName: 'SOME_IT_SERVICE (DEV): SOME_IT_SERVICE APPMANAGER'
     serviceType: Integration Service
     appConfigurationId: SOME_IT_SERVICE
+    service: {"id":"SOME_IT_SERVICE","name":"Some IT Service"}
     `
 )
 
-
-test('placeholder: Object',
-  testObjectPlaceholder,
+test('placeholder.Object: service',
+  caseObjectPlaceholder,
   {
     template: {
       service: '{{service.id}}',
-      displayName: '{{platform.id}} ({{environment.shortName}}): {{service.id}} {{role.name}}',
+      displayName: '{{platform.id}} ({{environment.name}}): {{service.id}} {{role.name}}',
       serviceType: 'Integration Service',
       appConfigurationId: '{{service.id}}',
       members: '&{{appdata.members}}',
@@ -70,7 +62,7 @@ test('placeholder: Object',
       service: { id: 'SOME_IT_SERVICE' },
       platform: { id: 'SOME_IT_SERVICE' },
       role: { name: 'APPMANAGER' },
-      environment: { shortName: 'DEV' },
+      environment: { name: 'DEV' },
       appdata: {
         members: [
           { id: 'user1', email: 'user1@test.com' },
@@ -95,54 +87,8 @@ test('placeholder: Object',
   }
 )
 
-test('placeholder: Array',
-  testObjectPlaceholder,
-  {
-    template: {
-      list: [
-        { service: '{{service.id}}' },
-        { displayName: '{{platform.id}} ({{environment.shortName}}): {{service.id}} {{role.name}}' },
-        { serviceType: 'Integration Service' },
-        { appConfigurationId: '{{service.id}}' },
-        { members: '&{{appdata.members}}' },
-        { isExternal: '&{{appdata.isExternal}}' },
-      ],
-    },
-    data: {
-      service: { id: 'SOME_IT_SERVICE' },
-      platform: { id: 'SOME_IT_SERVICE' },
-      role: { name: 'APPMANAGER' },
-      environment: { shortName: 'DEV' },
-      appdata: {
-        members: [
-          { id: 'user1', email: 'user1@test.com' },
-          { id: 'user2', email: 'user2@test.com' },
-          { id: 'user3', email: 'user3@test.com' },
-        ],
-        isExternal: false,
-      },
-    },
-  },
-  { 
-    list: [
-      { service: 'SOME_IT_SERVICE' },
-      { displayName: 'SOME_IT_SERVICE (DEV): SOME_IT_SERVICE APPMANAGER' },
-      { serviceType: 'Integration Service' },
-      { appConfigurationId: 'SOME_IT_SERVICE' },
-      { members:
-        [
-          { id: 'user1', email: 'user1@test.com' },
-          { id: 'user2', email: 'user2@test.com' },
-          { id: 'user3', email: 'user3@test.com' },
-        ] 
-      },
-      { isExternal: false },
-    ],
-  }
-)
-
-test('placeholder: apicall',
-  testObjectPlaceholder,
+test('placeholder.Object: apicall',
+  caseObjectPlaceholder,
   {
     template: {
       url: 'https://test.com/api/some.{{service.id}}-action',
@@ -217,8 +163,54 @@ test('placeholder: apicall',
   }
 )
 
-test('placeholder: List',
-  testObjectPlaceholder,
+test('placeholder.Array: service',
+  caseObjectPlaceholder,
+  {
+    template: {
+      list: [
+        { service: '{{service.id}}' },
+        { displayName: '{{platform.id}} ({{environment.name}}): {{service.id}} {{role.name}}' },
+        { serviceType: 'Integration Service' },
+        { appConfigurationId: '{{service.id}}' },
+        { members: '&{{appdata.members}}' },
+        { isExternal: '&{{appdata.isExternal}}' },
+      ],
+    },
+    data: {
+      service: { id: 'SOME_IT_SERVICE' },
+      platform: { id: 'SOME_IT_SERVICE' },
+      role: { name: 'APPMANAGER' },
+      environment: { name: 'DEV' },
+      appdata: {
+        members: [
+          { id: 'user1', email: 'user1@test.com' },
+          { id: 'user2', email: 'user2@test.com' },
+          { id: 'user3', email: 'user3@test.com' },
+        ],
+        isExternal: false,
+      },
+    },
+  },
+  { 
+    list: [
+      { service: 'SOME_IT_SERVICE' },
+      { displayName: 'SOME_IT_SERVICE (DEV): SOME_IT_SERVICE APPMANAGER' },
+      { serviceType: 'Integration Service' },
+      { appConfigurationId: 'SOME_IT_SERVICE' },
+      { members:
+        [
+          { id: 'user1', email: 'user1@test.com' },
+          { id: 'user2', email: 'user2@test.com' },
+          { id: 'user3', email: 'user3@test.com' },
+        ] 
+      },
+      { isExternal: false },
+    ],
+  }
+)
+
+test('placeholder.List: service',
+  caseObjectPlaceholder,
   {
     template: {
       title: '{{ service.id }}',
@@ -253,98 +245,3 @@ test('placeholder: List',
     ],
   }
 )
-
-test('placeholder: Not template object property',
-  testObjectPlaceholder,
-  {
-    template: { obj: 6546546546 },
-    data: {}
-  },
-  { obj: 6546546546 },
-)
-
-test('placeholder: Not resolved',
-  testObjectPlaceholder,
-  {
-    template: '{{user.name}}',
-    data: {},
-    options: {
-      error: false,
-    }
-  },
-  '{{user.name}}'
-)
-
-test('placeholder: String: Path not found',
-  testObjectPlaceholderWithError,
-  {
-    template: '{{user.name}}',
-    data: {},
-    options: {
-      error: true,
-    }
-  },
-  {
-    message: `object-placeholder: undefined value by path 'user.name'`,
-  },
-)
-
-test('placeholder: Object: Path not found',
-  testObjectPlaceholderWithError,
-  {
-    template: { name: '{{user.name}}' },
-    data: {},
-    options: {
-      error: true,
-    }
-  },
-  {
-    message: `object-placeholder: undefined value by path 'user.name'`,
-  },
-)
-
-test('placeholder: Array: Path not found',
-  testObjectPlaceholderWithError,
-  {
-    template: ['{{user.name}}'],
-    data: {},
-    options: {
-      error: true,
-    }
-  },
-  {
-    message: `object-placeholder: undefined value by path 'user.name'`,
-  },
-)
-
-test('placeholder: List: Path not found',
-  testObjectPlaceholderWithError,
-  {
-    template: {
-      emails: [
-        '@{{ service.members | member }}',
-        '{{ @.member.email }}',
-      ],
-    },
-    data: {
-      service: {
-        members: 'SOME_IT_SERVICE',
-      },
-    },
-  },
-  {
-    message: `object-placeholder: path 'service.members' should point to array value`,
-  },
-)
-
-
-function testObjectPlaceholder(t, input = {}, expected = {}) {
-  const { template, data, options } = input
-  const result = placeholder(template, data, options)
-  t.deepEqual(result, expected)
-}
-
-function testObjectPlaceholderWithError(t, input = {}, expected = {}) {
-  const { template, data, options } = input
-  t.throws(() => placeholder(template, data, options), expected)
-}

@@ -1,32 +1,55 @@
 // object-placeholder
 // * Inspired by Placeholders.JS implemented by Chris Ferdinandi (https://gomakethings.com)
 
-const isObject = require('./is-plain-object')
+const isPlainObject = require('./is-plain-object')
+const isTemplateString = require('./is-template-string')
+const getValue = require('./get-value')
 
+/**
+ * Replaces placeholders with real content
+ * @param  {<T>}          template  The template
+ * @param  {Object}       data      The object of values to substitute
+ * @param  {Object}       options   Some options
+ * @return {<T>}                    The output value
+ */
 module.exports = (template, data = {}, options = {}) => {
 	const {
 		error = true,
 	} = options
 
 	const storage = {
-		'{}': data,
-		'@': {},
+		'{}': data, // input data
+		'@': {}, // loop data
 	}
 	return nestedPlaceholder(template, storage, error)
 }
 
 /* eslint-disable no-nested-ternary */
+/**
+ * Replaces placeholders with real content including all nested properties
+ * @param  {<T>}          template  The template
+ * @param  {Object}       storage   The values storage
+ * @param  {Boolean}      error     Throw the error or not
+ * @return {<T>}                    The output value
+ */
 function nestedPlaceholder (template, storage, error) {
-	const placeholder = (isObject(template))
+	const placeholder = (isPlainObject(template))
 		? objectPlaceholder
 		: (Array.isArray(template))
 			? arrayPlaceholder
-			: (isStringTemplate(template))
+			: (isTemplateString(template))
 				? stringPlaceholder
 				: valuePlaceholder
 	return placeholder(template, storage, error)
 }
 
+/**
+ * Replaces placeholders in object with real content
+ * @param  {Object}       template  The template array
+ * @param  {Object}       storage   The values storage
+ * @param  {Boolean}      error     Throw the error or not
+ * @return {Object}                 The output value
+ */
 function objectPlaceholder (template, storage, error) {
 	return Object.keys(template).reduce((obj, key) => {
 		obj[key] = nestedPlaceholder(template[key], storage, error)
@@ -34,13 +57,20 @@ function objectPlaceholder (template, storage, error) {
 	}, {})
 }
 
+/**
+ * Replaces placeholders in array with real content
+ * @param  {Array}        template  The template array
+ * @param  {Object}       storage   The values storage
+ * @param  {Boolean}      error     Throw the error or not
+ * @return {Array}                  The output value
+ */
 function arrayPlaceholder (template, storage, error) {
 	// Reference: replace the whole line by value and hold the type
 	const [ first, ...block ] = template
 	// Loop: all items from template replace by value for each item of specified array
 	if (typeof first === 'string' && first.startsWith('@{{') && first.endsWith('}}')) {
-		const { path, alias } = stringToExpresion(first)
-		const array = getExpanded(storage, path, error, false)
+		const { path, alias } = pathToExpresion(first)
+		const array = getValue(storage, path, error, false)
 		if (!Array.isArray(array)) 
     	throw new Error(`object-placeholder: path '${path}' should point to array value`)
 		const output = array.map(item => {
@@ -54,12 +84,41 @@ function arrayPlaceholder (template, storage, error) {
 	}
 }
 
-function valuePlaceholder (template, storage, error) {
+/**
+ * Replaces placeholders in string with real content
+ * @param  {String}       template  The template string
+ * @param  {Object}       storage   The values storage
+ * @param  {Boolean}      error     Throw the error or not
+ * @return {String}                 The output value
+ */
+function stringPlaceholder (template, storage, error) {
+	// Reference: replace the whole line by value and hold the type
+	if (template.startsWith('&{{') && template.endsWith('}}')) {
+		const { path } = pathToExpresion(template)
+		const value = getValue(storage, path, error, false)
+		return value
+	}
+
+	// Replace our curly braces with storage
+	template = template.replace(/\{\{([^}]+)\}\}/g, function (match) {
+		// Remove the wrapping curly braces
+		const path = match.slice(2, -2).trim()
+		// Get the value
+		const value = getValue(storage, path, error)
+		// Replace
+		return (value == null) ? '{{' + path + '}}' : value
+	})
+
 	return template
 }
 
-function isStringTemplate (template) {
-	return (typeof template === 'string' && template.includes('{{'))
+/**
+ * Replaces placeholders with real content
+ * @param  {<T>} template  The template
+ * @return {<T>}           The output value
+ */
+function valuePlaceholder (template) {
+	return template
 }
 
 /**
@@ -67,130 +126,10 @@ function isStringTemplate (template) {
  * @param  {String} str The initial path string
  * @return {Object}     The { path, alias } object
  */
-function stringToExpresion (str) {
+function pathToExpresion (str) {
 	const name = str.substring(3, str.length-2)
 	const [ first, second = 'current' ] = name.split('|')
 	const path = first.trim()
 	const alias = second.trim()
 	return { path, alias }
-}
-
-/**
- * If the path is a string, convert it to an array
- * @param  {String|Array} path The path
- * @return {Array}             The path array
- */
-function stringToPath (path) {
-
-	// If the path isn't a string, return it
-	if (typeof path !== 'string') return path
-
-	// Create new array
-	const output = []
-
-	// Split to an array with dot notation
-	path.split('.').forEach(function (item) {
-
-		// Split to an array with bracket notation
-		item.split(/\[([^}]+)\]/g).forEach(function (key) {
-
-			// Push to the new array
-			if (key.length > 0) {
-				output.push(key)
-			} // TODO: else should be an error
-
-		})
-
-	})
-
-	return output
-}
-
-/**
- * Get an object value from a specific path
- * @param  {Object}       obj  The object
- * @param  {String|Array} path The path
- * @param  {*}            def  A default value to return [optional]
- * @return {*}                 The value
- */
-function get (obj, path, error) {
-
-	// Get the path as an array
-	path = stringToPath(path)
-
-	// Cache the current object
-	let current = obj
-
-	// For each item in the path, dig into the object
-	for (let i = 0; i < path.length; i++) {
-		// update the current  value
-		// TODO: need to manage case with array index number like [1]
-		current = current[path[i]]
-
-		// If the item isn't found, return the default (or undefined)
-		if (current == null) {
-			if (error)
-    		throw new Error(`object-placeholder: undefined value by path '${path.join('.')}'`)
-			else
-				return current
-		}
-	}
-
-	return current
-}
-
-/**
- * Get a value from storage by specific path 
- * @param  {Object}       obj  The object
- * @param  {String|Array} path The path
- * @param  {*}            def  A default value to return [optional]
- * @param  {Boolean}      stringify Converte to string the output value 
- * @return {*}                 The output value
- */
-function getExpanded (storage, inputPath, error, stringify = true) {
-	
-	// Get the path as an array
-	const path = stringToPath(inputPath)
-
-	let [ root ] = path
-	if (root === '@') {
-		path.shift()
-	} else {
-		root = '{}' // by default
-	}
-	const obj = storage[root]
-
-	const data = get(obj, path, error)
-
-	const result = (stringify && typeof data === 'object')
-		? JSON.stringify(data)
-		: data
-
-	return result
-}
-
-/**
- * Replaces placeholders with real content
- * @param {String} template The template string
- * @param {String} local    A local placeholder to use, if any
- */
-function stringPlaceholder (template, data, error) {
-	// Reference: replace the whole line by value and hold the type
-	if (template.startsWith('&{{') && template.endsWith('}}')) {
-		const { path } = stringToExpresion(template)
-		const value = getExpanded(data, path, error, false)
-		return value
-	}
-
-	// Replace our curly braces with data
-	template = template.replace(/\{\{([^}]+)\}\}/g, function (match) {
-		// Remove the wrapping curly braces
-		const path = match.slice(2, -2).trim()
-		// Get the value
-		const value = getExpanded(data, path, error)
-		// Replace
-		return (value == null) ? '{{' + path + '}}' : value
-	})
-
-	return template
 }
