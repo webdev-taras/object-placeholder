@@ -7,7 +7,6 @@ function caseObjectPlaceholder(t, input = {}, expected) {
   const { placeholder } = t.context
   const { template, data, options } = input
   const result = placeholder(template, data, options)
-  t.log(result)
   t.deepEqual(result, expected)
 }
 

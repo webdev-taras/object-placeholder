@@ -7,9 +7,9 @@ placeholder(template, data, options)
 where:
 - `template` - some template (string, object, array)
 - `data` - object with values to replace
-- `options` - { error: true } by default
+- `options` - [see description below](#options)
 
-This function allows you to substitute ('mustache' like) `{{<template>}}` by values in `<data>` param including all nested properties of object or array template.
+This function allows you to substitute ['mustache' like](#syntax) `{{<template>}}` by values in `<data>` param including all nested properties of object or array template.
 
 ## Usage
 
@@ -96,38 +96,13 @@ result = {
 
 ## Syntax
 
-1. String value syntax
+### 1. String value syntax
 
 Returns the value converted to 'string' type
 ```text
 {{property}}
 ```
-
-2. Reference value syntax
-
-Returns the value of original type
-```text
-&{{property}}
-```
-
-3. Loop syntax
-
-Starts new loop for property of array type
-```text
-@{{ array | item }}
-```
-
-4. Item syntax
-
-Returns the value of current item in a loop 
-```text
-{{@.item.property}}
-```
-
-## Path
-
 Path can also be dot-separated:
-
 ```text
 {{user.name}} {{user.email}} 
 ```
@@ -135,6 +110,7 @@ Path can also be dot-separated:
 In this case `data` parameter should be the object:
 ```javascript
 {
+  property: 'blablabla',
   user: {
     name: 'John Connor',
     email: 'john.connor@test.com'
@@ -142,19 +118,48 @@ In this case `data` parameter should be the object:
 }
 ```
 
+### 2. Reference value syntax
+
+Returns the value of original type
+```text
+&{{property}}
+```
+
+### 3. Loop syntax
+
+Starts new loop for property of array type
+```text
+@{{ array | item }}
+```
+
+### 4. Item syntax
+
+Returns the value of current item in a loop 
+```text
+{{@.item.property}}
+```
+
 ## Options
 
-### error
-
-Define how to manage the case when template was not resolved.
-If `true` then throw the Error immediately in place where value by specified path was not found.
-If `false` then just pass through this case in leave template string as is.
-
+By default
 ```javascript
 options: {
-  error: true // by default
+  error: true,
+  clone: true,
 }
 ```
+
+### `error`
+
+Define how to manage the case when template was not resolved.\
+If `true` then throw the Error immediately in place where value by specified path was not found.\
+If `false` then just pass through this case in leave template string as is.\
+
+### `clone`
+
+Clone the output value or not.\
+If `true` then all properties of output object will be clone.\
+If `false` then 'object' type properties will refer to input data object properties.\
 
 ## Install
 

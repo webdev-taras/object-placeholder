@@ -68,6 +68,7 @@ test('placeholder.Object: service',
       mailto: '{{info.members.0.email}}',
       members: '&{{info.members}}',
       isExternal: '&{{info.isExternal}}',
+      notExist: '&{{not.exist}}',
     },
     data: {
       service: { id: 'SOME_IT_SERVICE' },
@@ -83,19 +84,23 @@ test('placeholder.Object: service',
         isExternal: false,
       },
     },
+    options: {
+      error: false,
+    }
   },
   {
     service: 'SOME_IT_SERVICE',
     displayName: 'SOME_IT_SERVICE (DEV): SOME_IT_SERVICE APPMANAGER',
     serviceType: 'Integration Service',
-    isExternal: false,
     appConfigurationId: 'SOME_IT_SERVICE',
     mailto: 'user1@test.com',
     members: [
       { id: 'user1', email: 'user1@test.com' },
       { id: 'user2', email: 'user2@test.com' },
       { id: 'user3', email: 'user3@test.com' },
-    ]
+    ],
+    isExternal: false,
+    notExist: '&{{not.exist}}',
   }
 )
 

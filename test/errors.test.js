@@ -29,6 +29,20 @@ test('placeholder.Object: Path not found',
   },
 )
 
+test('placeholder.Reference: Path not found',
+  caseObjectPlaceholderWithError,
+  {
+    template: { name: '&{{user.name}}' },
+    data: {},
+    options: {
+      error: true,
+    }
+  },
+  {
+    message: `object-placeholder: undefined value by path 'user.name'`,
+  },
+)
+
 test('placeholder.Array: Path not found',
   caseObjectPlaceholderWithError,
   {

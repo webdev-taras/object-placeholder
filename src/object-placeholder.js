@@ -4,6 +4,7 @@
 const isPlainObject = require('./is-plain-object')
 const isTemplateString = require('./is-template-string')
 const getValue = require('./get-value')
+const deepClone = require('./deep-clone')
 
 /**
  * Replaces placeholders with real content
@@ -14,14 +15,18 @@ const getValue = require('./get-value')
  */
 module.exports = (template, data = {}, options = {}) => {
 	const {
-		error = true,
+		error = true, // Throw the error or not when template was not resolved
+		clone = true, // Clone the output value or not
 	} = options
-
+	const settings = {
+		error,
+		clone: (clone) ? deepClone : value => value
+	}
 	const storage = {
 		'{}': data, // input data
 		'@': {}, // loop data
 	}
-	return nestedPlaceholder(template, storage, error)
+	return nestedPlaceholder(template, storage, settings)
 }
 
 /* eslint-disable no-nested-ternary */
@@ -29,10 +34,10 @@ module.exports = (template, data = {}, options = {}) => {
  * Replaces placeholders with real content including all nested properties
  * @param  {<T>}          template  The template
  * @param  {Object}       storage   The values storage
- * @param  {Boolean}      error     Throw the error or not
+ * @param  {Object}       settings  Some settings
  * @return {<T>}                    The output value
  */
-function nestedPlaceholder (template, storage, error) {
+function nestedPlaceholder (template, storage, settings) {
 	const placeholder = (isPlainObject(template))
 		? objectPlaceholder
 		: (Array.isArray(template))
@@ -40,19 +45,19 @@ function nestedPlaceholder (template, storage, error) {
 			: (isTemplateString(template))
 				? stringPlaceholder
 				: valuePlaceholder
-	return placeholder(template, storage, error)
+	return placeholder(template, storage, settings)
 }
 
 /**
  * Replaces placeholders in object with real content
  * @param  {Object}       template  The template array
  * @param  {Object}       storage   The values storage
- * @param  {Boolean}      error     Throw the error or not
+ * @param  {Object}       settings  Some settings
  * @return {Object}                 The output value
  */
-function objectPlaceholder (template, storage, error) {
+function objectPlaceholder (template, storage, settings) {
 	return Object.keys(template).reduce((obj, key) => {
-		obj[key] = nestedPlaceholder(template[key], storage, error)
+		obj[key] = nestedPlaceholder(template[key], storage, settings)
 		return obj
 	}, {})
 }
@@ -61,26 +66,26 @@ function objectPlaceholder (template, storage, error) {
  * Replaces placeholders in array with real content
  * @param  {Array}        template  The template array
  * @param  {Object}       storage   The values storage
- * @param  {Boolean}      error     Throw the error or not
+ * @param  {Object}       settings  Some settings
  * @return {Array}                  The output value
  */
-function arrayPlaceholder (template, storage, error) {
+function arrayPlaceholder (template, storage, settings) {
 	// Reference: replace the whole line by value and hold the type
 	const [ first, ...block ] = template
 	// Loop: all items from template replace by value for each item of specified array
 	if (typeof first === 'string' && first.startsWith('@{{') && first.endsWith('}}')) {
 		const { path, alias } = pathToExpresion(first)
-		const array = getValue(storage, path, error, false)
+		const array = getValue(storage, path, settings)
 		if (!Array.isArray(array)) 
     	throw new Error(`object-placeholder: path '${path}' should point to array value`)
 		const output = array.map(item => {
 			storage['@'][alias] = item
-			return block.map(el => nestedPlaceholder(el, storage, error))
+			return block.map(el => nestedPlaceholder(el, storage, settings))
 		})
 		storage['@'][alias] = undefined
 		return output.flat()
 	} else {
-		return template.map(el => nestedPlaceholder(el, storage, error))
+		return template.map(el => nestedPlaceholder(el, storage, settings))
 	}
 }
 
@@ -88,15 +93,15 @@ function arrayPlaceholder (template, storage, error) {
  * Replaces placeholders in string with real content
  * @param  {String}       template  The template string
  * @param  {Object}       storage   The values storage
- * @param  {Boolean}      error     Throw the error or not
+ * @param  {Object}       settings  Some settings
  * @return {String}                 The output value
  */
-function stringPlaceholder (template, storage, error) {
+function stringPlaceholder (template, storage, settings) {
 	// Reference: replace the whole line by value and hold the type
 	if (template.startsWith('&{{') && template.endsWith('}}')) {
 		const { path } = pathToExpresion(template)
-		const value = getValue(storage, path, error, false)
-		return value
+		const value = getValue(storage, path, settings)
+		return (value == null) ? '&{{' + path + '}}' : valuePlaceholder(value, storage, settings)
 	}
 
 	// Replace our curly braces with storage
@@ -104,9 +109,14 @@ function stringPlaceholder (template, storage, error) {
 		// Remove the wrapping curly braces
 		const path = match.slice(2, -2).trim()
 		// Get the value
-		const value = getValue(storage, path, error)
-		// Replace
-		return (value == null) ? '{{' + path + '}}' : value
+		const value = getValue(storage, path, settings)
+		// TODO: replace by stringify function
+		// TODO: define 'empty' function to define significant value
+		return (value == null)
+			? '{{' + path + '}}'
+			: (typeof value === 'object')
+				? JSON.stringify(value)
+				: value
 	})
 
 	return template
@@ -114,11 +124,15 @@ function stringPlaceholder (template, storage, error) {
 
 /**
  * Replaces placeholders with real content
- * @param  {<T>} template  The template
- * @return {<T>}           The output value
+ * @param  {<T>}          value    The template
+ * @param  {Object}       storage  The values storage
+ * @param  {Object}       settings Some settings
+ * @return {<T>}                   The output value
  */
-function valuePlaceholder (template) {
-	return template
+function valuePlaceholder (value, storage, settings) {
+	return (typeof value !== 'object' || value === null)
+		? value
+		: settings.clone(value)
 }
 
 /**
