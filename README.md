@@ -146,6 +146,7 @@ By default
 options: {
   error: true,
   clone: true,
+  stringify: true,
 }
 ```
 
@@ -153,13 +154,20 @@ options: {
 
 Define how to manage the case when template was not resolved.\
 If `true` then throw the Error immediately in place where value by specified path was not found.\
-If `false` then just pass through this case in leave template string as is.\
+If `false` then just pass through this case and leave template string as is.
 
 ### `clone`
 
 Clone the output value or not.\
-If `true` then all properties of output object will be clone.\
-If `false` then 'object' type properties will refer to input data object properties.\
+If `true` then all properties of output object will be cloned.\
+If `false` then 'object' type properties will refer to input data object properties.
+
+### `stringify`
+
+Stringify the value of non 'string' type.\
+If `true` then `JSON.stringify()` will be used.\
+If `false` then `value.toString()` will be used.\
+If `function` passed then it will be used as stringify function.
 
 ## Install
 

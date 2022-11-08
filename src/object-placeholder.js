@@ -17,10 +17,14 @@ module.exports = (template, data = {}, options = {}) => {
 	const {
 		error = true, // Throw the error or not when template was not resolved
 		clone = true, // Clone the output value or not
+		stringify = true, // Stringify the value of non 'string' type
 	} = options
 	const settings = {
 		error,
-		clone: (clone) ? deepClone : value => value
+		clone: (clone) ? deepClone : value => value,
+		stringify: (typeof stringify === 'function')
+		  ? stringify
+			: (stringify) ? JSON.stringify : value => value.toString()
 	}
 	const storage = {
 		'{}': data, // input data
@@ -110,12 +114,11 @@ function stringPlaceholder (template, storage, settings) {
 		const path = match.slice(2, -2).trim()
 		// Get the value
 		const value = getValue(storage, path, settings)
-		// TODO: replace by stringify function
 		// TODO: define 'empty' function to define significant value
 		return (value == null)
 			? '{{' + path + '}}'
-			: (typeof value === 'object')
-				? JSON.stringify(value)
+			: (typeof value !== 'string')
+				? settings.stringify(value)
 				: value
 	})
 
