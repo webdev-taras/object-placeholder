@@ -28,22 +28,34 @@ const output = {
   origin: data.service,
 }
 
-test('placeholder.DeepClone: options.clone = true',
-  casePlaceholderDeepClone,
-  { template, data },
+test('placeholder: options.clone = false',
+  casePlaceholderDeepCloneWithout,
+  { template, data, options: { clone: false } },
   output
 )
 
-test('placeholder.DeepClone: options.clone = false',
-  casePlaceholderDeepCloneWithout,
-  { template, data },
+test('placeholder: options.clone = true',
+  casePlaceholderDeepClone,
+  { template, data, options: { clone: true } },
+  output
+)
+
+test('placeholder: options.clone = function',
+  casePlaceholderDeepClone,
+  {
+    template,
+    data,
+    options: {
+      clone: (obj) => JSON.parse(JSON.stringify(obj)),
+    },
+  },
   output
 )
 
 function casePlaceholderDeepClone(t, input = {}, expected) {
   const { placeholder } = t.context
-  const { template, data } = input
-  const result = placeholder(template, data, { clone: true })
+  const { template, data, options } = input
+  const result = placeholder(template, data, options)
   t.is(result.title, expected.title)
   t.not(result.users, expected.users)
   result.users.forEach((_, i) =>
@@ -60,8 +72,8 @@ function casePlaceholderDeepClone(t, input = {}, expected) {
 
 function casePlaceholderDeepCloneWithout(t, input = {}, expected) {
   const { placeholder } = t.context
-  const { template, data } = input
-  const result = placeholder(template, data, { clone: false })
+  const { template, data, options } = input
+  const result = placeholder(template, data, options)
   t.is(result.title, expected.title)
   t.not(result.users, expected.users)
   result.users.forEach((_, i) =>

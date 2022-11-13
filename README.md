@@ -5,9 +5,9 @@ It's a zero-dependency package that exports function:
 placeholder(template, data, options)
 ```
 where:
-- `template` - some template (string, object, array)
+- `template` - some template ( [string](#string-template), [object](#object-template), [array](#array-template) )
 - `data` - object with values to replace
-- `options` - [see description below](#options)
+- `options` - { [error, clone, stringify](#options) }
 
 This function allows you to substitute ['mustache' like](#syntax) `{{<template>}}` by values in `<data>` param including all nested properties of object or array template.
 
@@ -17,7 +17,7 @@ This function allows you to substitute ['mustache' like](#syntax) `{{<template>}
 const placeholder = require('object-placeholder')
 ```
 
-`String` template:
+### `String` template:
 ```javascript
 const template = '{{user.name}}, {{user.email}}, {{user.id}}'
 const data = {
@@ -31,7 +31,7 @@ const result = placeholder(template, data)
 // result = 'John Connor, john.connor@test.com, 1985'
 ```
 
-`Object` template:
+### `Object` template:
 ```javascript
 const template = {
   target: {
@@ -56,7 +56,7 @@ result = {
 */
 ```
 
-`Array` template:
+### `Array` template:
 ```javascript
 const template = {
   title: '{{ service.id }}',
@@ -93,6 +93,8 @@ result = {
 }
 */
 ```
+
+[All examples](examples).
 
 ## Syntax
 
@@ -154,20 +156,25 @@ options: {
 
 Define how to manage the case when template was not resolved.\
 If `true` then throw the Error immediately in place where value by specified path was not found.\
-If `false` then just pass through this case and leave template string as is.
+If `false` then just pass through this case and leave template string as is.\
+If custom `function` passed then it will be used as error handler function.\
+For more details see [test examples](test/error-option.test.js).
 
 ### `clone`
 
 Clone the output value or not.\
 If `true` then all properties of output object will be cloned.\
-If `false` then 'object' type properties will refer to input data object properties.
+If `false` then 'object' type properties will refer to input data object properties.\
+If custom `function` passed then it will be used as clone function.\
+For more details see [test examples](test/clone-option.test.js).
 
 ### `stringify`
 
 Stringify the value of non 'string' type.\
 If `true` then `JSON.stringify()` will be used.\
 If `false` then `value.toString()` will be used.\
-If `function` passed then it will be used as stringify function.
+If custom `function` passed then it will be used as stringify function.\
+For more details see [test examples](test/stringify-option.test.js).
 
 ## Install
 

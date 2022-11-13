@@ -1,39 +1,9 @@
-// object-placeholder
-// * Inspired by Placeholders.JS implemented by Chris Ferdinandi (https://gomakethings.com)
-
 const isPlainObject = require('./is-plain-object')
 const isTemplateString = require('./is-template-string')
 const getValue = require('./get-value')
-const deepClone = require('./deep-clone')
 
-/**
- * Replaces placeholders with real content
- * @param  {<T>}          template  The template
- * @param  {Object}       data      The object of values to substitute
- * @param  {Object}       options   Some options
- * @return {<T>}                    The output value
- */
-module.exports = (template, data = {}, options = {}) => {
-	const {
-		error = true, // Throw the error or not when template was not resolved
-		clone = true, // Clone the output value or not
-		stringify = true, // Stringify the value of non 'string' type
-	} = options
-	const settings = {
-		error,
-		clone: (clone) ? deepClone : value => value,
-		stringify: (typeof stringify === 'function')
-		  ? stringify
-			: (stringify) ? JSON.stringify : value => value.toString()
-	}
-	const storage = {
-		'{}': data, // input data
-		'@': {}, // loop data
-	}
-	return nestedPlaceholder(template, storage, settings)
-}
+module.exports = nestedPlaceholder
 
-/* eslint-disable no-nested-ternary */
 /**
  * Replaces placeholders with real content including all nested properties
  * @param  {<T>}          template  The template
@@ -79,15 +49,19 @@ function arrayPlaceholder (template, storage, settings) {
 	// Loop: all items from template replace by value for each item of specified array
 	if (typeof first === 'string' && first.startsWith('@{{') && first.endsWith('}}')) {
 		const { path, alias } = pathToExpresion(first)
-		const array = getValue(storage, path, settings)
-		if (!Array.isArray(array)) 
-    	throw new Error(`object-placeholder: path '${path}' should point to array value`)
-		const output = array.map(item => {
-			storage['@'][alias] = item
-			return block.map(el => nestedPlaceholder(el, storage, settings))
-		})
-		storage['@'][alias] = undefined
-		return output.flat()
+		const array = getValue(storage, path, first, settings)
+		if (Array.isArray(array)) {
+			const output = array.map(item => {
+				storage['@'][alias] = item
+				return nestedPlaceholder(block, storage, settings)
+			})
+			storage['@'][alias] = undefined
+			return output.flat()
+		} else if (array === first) {
+			return [ first, ...nestedPlaceholder(block, storage, settings) ]
+		} else {
+			throw new Error(`object-placeholder: path '${path}' should point to array value`)
+		}
 	} else {
 		return template.map(el => nestedPlaceholder(el, storage, settings))
 	}
@@ -104,8 +78,8 @@ function stringPlaceholder (template, storage, settings) {
 	// Reference: replace the whole line by value and hold the type
 	if (template.startsWith('&{{') && template.endsWith('}}')) {
 		const { path } = pathToExpresion(template)
-		const value = getValue(storage, path, settings)
-		return (value == null) ? '&{{' + path + '}}' : valuePlaceholder(value, storage, settings)
+		const value = getValue(storage, path, template, settings)
+		return valuePlaceholder(value, storage, settings)
 	}
 
 	// Replace our curly braces with storage
@@ -113,13 +87,10 @@ function stringPlaceholder (template, storage, settings) {
 		// Remove the wrapping curly braces
 		const path = match.slice(2, -2).trim()
 		// Get the value
-		const value = getValue(storage, path, settings)
-		// TODO: define 'empty' function to define significant value
-		return (value == null)
-			? '{{' + path + '}}'
-			: (typeof value !== 'string')
-				? settings.stringify(value)
-				: value
+		const value = getValue(storage, path, match, settings)
+		return (typeof value !== 'string')
+			? settings.stringify(value)
+			: value
 	})
 
 	return template

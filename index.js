@@ -1,1 +1,1 @@
-module.exports = require('./src/object-placeholder')
+module.exports = require('./src/index')

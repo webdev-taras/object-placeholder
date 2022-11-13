@@ -4,10 +4,11 @@ module.exports = getValue
  * Get a value from storage by specific path 
  * @param  {Object}       storage   The values storage
  * @param  {String}       path      The path
+ * @param  {Object}       sample    The template string
  * @param  {Object}       settings  Some settings
  * @return {*}                      The output value
  */
- function getValue (storage, path, settings) {
+function getValue (storage, path, sample, settings) {
 	
 	// Get the path as an array
 	const chain = pathToChain(path)
@@ -18,9 +19,24 @@ module.exports = getValue
 	} else {
 		root = '{}' // by default
 	}
-	const obj = storage[root]
+	const data = storage[root]
 
-	return get(obj, chain, settings)
+	const value = get(data, chain)
+
+	if (settings.valid(value)) {
+		return value
+	} else {
+		const error = new Error(`object-placeholder: undefined value by path '${path}'`)
+		const result = settings.error({
+			template: sample,
+			data,
+			value,
+			path,
+			error,
+		})
+		if (result instanceof Error) throw result
+		return result
+	}
 }
 
 /**
@@ -37,28 +53,21 @@ function pathToChain (path) {
 
 /**
  * Get an object value from a specific path
- * @param  {Object}       obj   The object
+ * @param  {Object}       data  The object
  * @param  {Array}        path  The path
- * @param  {Object}       settings  Some settings
  * @return {*}                  The value
  */
-function get (obj, path, settings) {
+function get (data, path) {
 
 	// Cache the current object
-	let current = obj
+	let current = data
 
 	// For each item in the path, dig into the object
 	for (let i = 0; i < path.length; i++) {
 		// update the current value
 		current = current[path[i]]
-
-		// TODO: define existance of property by 'path[i]' in current
-		// If the item isn't found, return the undefined or throw the error
 		if (current == null) {
-			if (settings.error)
-    		throw new Error(`object-placeholder: undefined value by path '${path.join('.')}'`)
-			else
-				return current
+			return current
 		}
 	}
 

@@ -60,8 +60,8 @@ test('placeholder.List: not resolved',
     options: { error: false }
   },
   [
-    '{{@.member.name}}',
-    '{{@.member.name}}',
-    '{{@.member.name}}',
+    '{{ @.member.name }}',
+    '{{ @.member.name }}',
+    '{{ @.member.name }}',
   ]
 )

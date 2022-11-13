@@ -4,7 +4,7 @@ const { caseObjectPlaceholder } = require('./placeholders.case')
 test('placeholder.String: simple',
   caseObjectPlaceholder,
   {
-    template: '{{greeting}}, {{name}}! It is currently. {{not.exist}} You are {{details.mood}} to eat {{details.food}}. (<em>{{}} <~~ to make sure empty braces are ignored</em>)',
+    template: '{{greeting}}, {{name}}! It is currently. {{ not.exist }} You are {{details.mood}} to eat {{details.food}}. (<em>{{}} <~~ to make sure empty braces are ignored</em>)',
     data: {
       greeting: 'Hello',
       name: 'World',
@@ -17,7 +17,7 @@ test('placeholder.String: simple',
       error: false,
     }
   },
-  'Hello, World! It is currently. {{not.exist}} You are happy to eat a turkey sandwich. (<em>{{}} <~~ to make sure empty braces are ignored</em>)',
+  'Hello, World! It is currently. {{ not.exist }} You are happy to eat a turkey sandwich. (<em>{{}} <~~ to make sure empty braces are ignored</em>)',
 )
 
 test('placeholder.MultiString: service',
