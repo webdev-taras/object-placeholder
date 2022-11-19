@@ -1,8 +1,12 @@
 # object-placeholder
 
-It's a zero-dependency package that exports function:
+It's a zero-dependency package that exports default function:
 ```text
-placeholder(template, data, options)
+placeholder(<template>, <data>, <options>)
+```
+and function with named params:
+```text
+placeholder.replace({ template, data, options })
 ```
 where:
 - `template` - some template ( [string](#string-template), [object](#object-template), [array](#array-template) )
@@ -15,6 +19,8 @@ This function allows you to substitute ['mustache' like](#syntax) `{{<template>}
 
 ```javascript
 const placeholder = require('object-placeholder')
+// or
+const { replace } = require('object-placeholder')
 ```
 
 ### `String` template:
@@ -27,7 +33,10 @@ const data = {
     email: 'john.connor@test.com'
   }
 }
+
 const result = placeholder(template, data)
+// or
+const result = replace({ template, data })
 // result = 'John Connor, john.connor@test.com, 1985'
 ```
 
@@ -175,6 +184,41 @@ If `true` then `JSON.stringify()` will be used.\
 If `false` then `value.toString()` will be used.\
 If custom `function` passed then it will be used as stringify function.\
 For more details see [test examples](test/stringify-option.test.js).
+
+## Partial application
+
+You can use partial application for `replace` function parameters in order to produce another function of smaller arguments i.e binding values to one or more of those arguments. For example:
+```javascript
+const { replace } = require('object-placeholder')
+
+const template = '{{user.name}}, {{user.email}}, {{user.id}}'
+const options = { clone: true }
+
+const configured = replace({ template, options })
+
+const result1 = configured({
+  data: {
+    user: {
+      id: 1985,
+      name: 'John Connor',
+      email: 'john.connor@test.com'
+    }
+  }
+})
+// result1 = 'John Connor, john.connor@test.com, 1985'
+
+const result2 = configured({
+  data: {
+    user: {
+      id: 1965,
+      name: 'Sarah Connor',
+      email: 'sarah.connor@test.com'
+    }
+  }
+})
+// result2 = 'Sarah Connor, sarah.connor@test.com, 1965'
+
+```
 
 ## Install
 

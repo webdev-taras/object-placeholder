@@ -1,5 +1,9 @@
 const test = require('ava')
-const { caseObjectPlaceholderWithError } = require('./placeholders.case')
+const {
+  caseObjectPlaceholderWithError,
+  caseReplaceWithError,
+  caseReplacePartialArgsWithError,
+} = require('./placeholders.case')
 
 test('placeholder.String: Path not found',
   caseObjectPlaceholderWithError,
@@ -74,5 +78,38 @@ test('placeholder.List: Path not found',
   },
   {
     message: `object-placeholder: path 'service.members' should point to array value`,
+  },
+)
+
+
+test('replace: no arguments at all',
+  caseReplaceWithError,
+  undefined,
+  {
+    message: `replace: the argument type should be 'object'`,
+  },
+)
+
+test('replace: wrong argument type',
+  caseReplaceWithError,
+  'some template',
+  {
+    message: `replace: the argument type should be 'object'`,
+  },
+)
+
+test('replace: empty argument object',
+  caseReplaceWithError,
+  {},
+  {
+    message: `replace: at least one property in argument object should be specified`,
+  },
+)
+
+test('replace.currying: wrong argument type',
+  caseReplacePartialArgsWithError,
+  [{ options: {} }],
+  {
+    message: `replace.currying: the argument type should be 'object'`,
   },
 )

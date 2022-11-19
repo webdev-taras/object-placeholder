@@ -2,7 +2,10 @@
 // * Inspired by Placeholders.JS implemented by Chris Ferdinandi (https://gomakethings.com)
 
 const deepClone = require('./deep-clone')
+const isPlainObject = require('./is-plain-object')
 const nestedPlaceholder = require('./object-placeholder')
+
+module.exports = placeholder
 
 /**
  * Replaces placeholders with real content
@@ -11,7 +14,7 @@ const nestedPlaceholder = require('./object-placeholder')
  * @param  {Object}       options   Some options
  * @return {<T>}                    The output value
  */
-module.exports = (template, data = {}, options = {}) => {
+function placeholder (template, data = {}, options = {}) {
 	const {
 		error = true, // Throw the error or not when template was not resolved
 		clone = true, // Clone the output value or not
@@ -37,4 +40,38 @@ module.exports = (template, data = {}, options = {}) => {
 		'@': {}, // loop data
 	}
 	return nestedPlaceholder(template, storage, settings)
+}
+placeholder.replace = replace
+
+const params = ['template', 'data', 'options']
+/**
+ * Call 'placeholder' with prepared args
+ * @param  {Object}       args    The object of args to pass
+ * @return {<T>}                  The result
+ */
+function replace(args) {
+	if (!isPlainObject(args))
+		throw new TypeError(`replace: the argument type should be 'object'`)
+	
+	const keys = Object.keys(args)
+		.filter(key => params.includes(key))
+
+	if (keys.length === 0) {
+		throw new TypeError(`replace: at least one property in argument object should be specified`)
+	} else if (keys.length === 3 || (keys.length === 2 && !keys.includes('options'))) {
+		// call
+		const { template, data, options } = args
+		return placeholder(template, data, options)
+	} else {
+		// currying
+		const partial = keys.reduce((obj, key) => {
+			obj[key] = args[key]
+			return obj
+		}, {})
+		return (input) => {
+			if (!isPlainObject(input))
+				throw new TypeError(`replace.currying: the argument type should be 'object'`)
+			return replace({ ...partial, ...input })
+		}
+	}
 }
